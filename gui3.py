@@ -1317,52 +1317,6 @@ elif selected_step == "📈 Forecasting":
             - Prediksi menggunakan rata-rata dari window sebelumnya (baseline model)
             """)
             
-            # Plot evaluasi model dengan interaktivitas
-            st.subheader("📈 Visualisasi Evaluasi Model")
-            
-            # Checkbox untuk kontrol visualisasi
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                show_actual = st.checkbox("Tampilkan Actual Values", value=True)
-            with col2:
-                show_predicted = st.checkbox("Tampilkan Predicted Values", value=True)
-            with col3:
-                show_residuals = st.checkbox("Tampilkan Residuals", value=True)
-            
-            fig, axes = plt.subplots(2, 1, figsize=(15, 12))
-            
-            # Plot 1: Actual vs Predicted pada data test
-            test_dates = st.session_state.df_test.index
-            
-            if show_actual:
-                axes[0].plot(test_dates, st.session_state.test_actual, 
-                            label='Actual Values', color='blue', linewidth=2.5, marker='o', markersize=4, alpha=0.8)
-            
-            if show_predicted:
-                axes[0].plot(test_dates, st.session_state.test_predicted, 
-                            label='Predicted Values', color='red', linewidth=2.5, marker='s', markersize=4, alpha=0.8)
-            
-            axes[0].set_title('Model Evaluation: Actual vs Predicted (Testing Period)', fontsize=16, fontweight='bold', pad=20)
-            axes[0].set_ylabel('Value', fontsize=13)
-            axes[0].legend(fontsize=12, loc='best')
-            axes[0].grid(True, alpha=0.4)
-            axes[0].tick_params(axis='both', which='major', labelsize=11)
-            
-            # Plot 2: Residuals
-            if show_residuals:
-                residuals = st.session_state.test_actual - st.session_state.test_predicted
-                axes[1].plot(test_dates, residuals, color='green', linewidth=2, marker='o', markersize=4, alpha=0.8)
-                axes[1].axhline(y=0, color='black', linestyle='--', alpha=0.7, linewidth=2)
-                axes[1].fill_between(test_dates, residuals, 0, alpha=0.3, color='green')
-                axes[1].set_title('Residuals (Actual - Predicted)', fontsize=16, fontweight='bold', pad=20)
-                axes[1].set_ylabel('Residuals', fontsize=13)
-                axes[1].set_xlabel('Date', fontsize=13)
-                axes[1].grid(True, alpha=0.4)
-                axes[1].tick_params(axis='both', which='major', labelsize=11)
-            
-            plt.tight_layout()
-            st.pyplot(fig)
-            
             # ============ 2. HASIL FORECASTING MASA DEPAN ============
             st.subheader("🔮 Forecasting Saham")
             
@@ -1413,8 +1367,8 @@ elif selected_step == "📈 Forecasting":
             with col4:
                 st.metric("Standar Deviasi", f"{np.std(st.session_state.future_predictions):.2f}")
             
-            # ============ 3. VISUALISASI FORECASTING DENGAN KONTROL INTERAKTIF ============
-            st.subheader("📊 Grafik Forecasting Interaktif")
+            # ============ 3. VISUALISASI FORECASTING ============
+            st.subheader("📊 Grafik Forecasting")
             
             # Kontrol visualisasi
             st.markdown("**Kontrol Visualisasi:**")
@@ -1429,57 +1383,16 @@ elif selected_step == "📈 Forecasting":
             with col4:
                 show_components = st.checkbox("Show Components", value=False)
             
-            # Slider untuk zoom temporal
-            st.markdown("**Kontrol Periode Tampilan:**")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Historical data range
-                hist_start = st.selectbox(
-                    "Mulai dari (Historical):", 
-                    ["Semua Data", "6 Bulan Terakhir", "3 Bulan Terakhir", "1 Bulan Terakhir"],
-                    index=1
-                )
-            
-            with col2:
-                # Future data range
-                future_end = st.slider(
-                    "Tampilkan forecast hingga hari ke:", 
-                    min_value=7, 
-                    max_value=forecast_horizon, 
-                    value=min(30, forecast_horizon)
-                )
-            
-            # Tentukan data yang akan ditampilkan
-            if hist_start == "6 Bulan Terakhir":
-                hist_cutoff = pd.Timestamp.now() - pd.Timedelta(days=180)
-            elif hist_start == "3 Bulan Terakhir":
-                hist_cutoff = pd.Timestamp.now() - pd.Timedelta(days=90)
-            elif hist_start == "1 Bulan Terakhir":
-                hist_cutoff = pd.Timestamp.now() - pd.Timedelta(days=30)
-            else:
-                hist_cutoff = None
-            
-            # Plot dengan ukuran yang lebih besar dan interaktif
+            # Plot dengan ukuran yang lebih besar
             fig, axes = plt.subplots(2, 1, figsize=(18, 14))
             
-            # Plot 1: Historical + Forecast
+            # Plot 1: Historical + Forecast (Semua Data)
             # Historical data (train + test)
             all_dates = list(st.session_state.df_train.index) + list(st.session_state.df_test.index)
             all_values = list(st.session_state.df_train['Y']) + list(st.session_state.df_test['Y'])
             
-            # Filter historical data berdasarkan pilihan user
-            if hist_cutoff:
-                filtered_data = [(d, v) for d, v in zip(all_dates, all_values) if d >= hist_cutoff]
-                if filtered_data:
-                    filtered_dates, filtered_values = zip(*filtered_data)
-                else:
-                    filtered_dates, filtered_values = all_dates, all_values
-            else:
-                filtered_dates, filtered_values = all_dates, all_values
-            
             if show_historical:
-                axes[0].plot(filtered_dates, filtered_values, 
+                axes[0].plot(all_dates, all_values, 
                             label='Historical Data', color='blue', linewidth=2.5, alpha=0.8)
             
             # Test predictions
@@ -1487,12 +1400,9 @@ elif selected_step == "📈 Forecasting":
                 axes[0].plot(st.session_state.df_test.index, st.session_state.test_predicted,
                             label='Model Prediction (Test)', color='orange', linewidth=2.5, linestyle='--', alpha=0.9)
             
-            # Future predictions (dengan batasan user)
-            future_dates_display = st.session_state.future_dates[:future_end]
-            future_pred_display = st.session_state.future_predictions[:future_end]
-            
+            # Future predictions
             if show_future:
-                axes[0].plot(future_dates_display, future_pred_display,
+                axes[0].plot(st.session_state.future_dates, st.session_state.future_predictions,
                             label='Future Forecast', color='red', linewidth=3, marker='o', markersize=5, alpha=0.9)
             
             # Vertical lines untuk pemisah
@@ -1507,26 +1417,26 @@ elif selected_step == "📈 Forecasting":
             
             # Plot 2: Decomposisi komponen forecasting atau detail zoom
             if show_components:
-                axes[1].plot(future_dates_display, st.session_state.future_predictions_tf[:future_end],
+                axes[1].plot(st.session_state.future_dates, st.session_state.future_predictions_tf,
                             label='Transfer Function Component', color='blue', linewidth=2.5, marker='s', markersize=4, alpha=0.8)
-                axes[1].plot(future_dates_display, st.session_state.future_predictions_noise[:future_end],
+                axes[1].plot(st.session_state.future_dates, st.session_state.future_predictions_noise,
                             label='Noise Component', color='green', linewidth=2.5, marker='^', markersize=4, alpha=0.8)
-                axes[1].plot(future_dates_display, future_pred_display,
+                axes[1].plot(st.session_state.future_dates, st.session_state.future_predictions,
                             label='Combined Forecast', color='red', linewidth=3, marker='o', markersize=5, alpha=0.9)
                 
                 axes[1].set_title('Decomposisi Komponen Forecasting', fontsize=18, fontweight='bold', pad=20)
                 axes[1].axhline(y=0, color='black', linestyle='--', alpha=0.6, linewidth=1)
             else:
                 # Zoom in pada periode forecast saja
-                axes[1].plot(future_dates_display, future_pred_display,
+                axes[1].plot(st.session_state.future_dates, st.session_state.future_predictions,
                             label='Future Forecast (Detailed View)', color='red', linewidth=3, marker='o', markersize=6, alpha=0.9)
                 
                 # Tambahkan confidence band (estimasi sederhana)
-                std_dev = np.std(future_pred_display)
-                upper_bound = future_pred_display + std_dev
-                lower_bound = future_pred_display - std_dev
+                std_dev = np.std(st.session_state.future_predictions)
+                upper_bound = st.session_state.future_predictions + std_dev
+                lower_bound = st.session_state.future_predictions - std_dev
                 
-                axes[1].fill_between(future_dates_display, lower_bound, upper_bound, 
+                axes[1].fill_between(st.session_state.future_dates, lower_bound, upper_bound, 
                                    alpha=0.3, color='red', label='Estimasi Confidence Band')
                 
                 axes[1].set_title('Detail Forecasting dengan Confidence Band', fontsize=18, fontweight='bold', pad=20)
@@ -1569,7 +1479,7 @@ elif selected_step == "📈 Forecasting":
     else:
         st.warning("⚠️ Silakan selesaikan tahapan Model Selection terlebih dahulu!")
         st.info("💡 Pastikan semua tahapan sebelumnya (Upload Data, Eksplorasi, Stationarity Test, dan Model Selection) sudah diselesaikan.")
-
+        
 # Sidebar help
 st.sidebar.markdown("---")
 st.sidebar.subheader("ℹ️ Bantuan")
