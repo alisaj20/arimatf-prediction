@@ -272,7 +272,7 @@ if selected_step == "📁 Upload Data":
 
             try:
                 # Baca file kurs USD secara otomatis
-                df_kurs = pd.read_csv('guikurs.csv')
+                df_kurs = pd.read_csv('dataset-kurs.csv')
                 st.write("**Preview data kurs USD (variabel eksogen):**")
                 st.dataframe(df_kurs)
                 
